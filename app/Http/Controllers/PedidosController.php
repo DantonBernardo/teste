@@ -11,7 +11,7 @@ class PedidosController extends Controller
 {
     public function index()
     {
-        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
+        $pedidos = Pedido::select('id', 'peca', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
@@ -26,7 +26,7 @@ class PedidosController extends Controller
 
     public function last()
     {
-        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
+        $pedidos = Pedido::select('id', 'peca', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
             ->orderBy('id', 'desc')
             ->take(10)
             ->get()
@@ -52,9 +52,9 @@ class PedidosController extends Controller
 
         $pedidos = Pedido::select('id', 'peca', 'descricao', 'solicitante')
             ->whereRaw('LOWER(peca) LIKE ?', ["%{$termo}%"])
-            ->orWhereRaw('LOWER(descricao) LIKE ?', ["%{$termo}%"])
             ->orWhereRaw('LOWER(solicitante) LIKE ?', ["%{$termo}%"])
             ->orWhereRaw('CAST(id AS CHAR) LIKE ?', ["%{$termo}%"])
+            ->orWhereRaw('LOWER(descricao) LIKE ?', ["%{$termo}%"])
             ->orderBy('id', 'asc')
             ->limit(10)
             ->get();
