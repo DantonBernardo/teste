@@ -34,7 +34,9 @@ Route::middleware('auth:api')->group(function () {
     // Rotas dinâmicas CRUD de pedidos
     Route::apiResource('pedidos', PedidosController::class);
 
-    Route::put('/lalala/editar/{id}', [PedidosController::class, 'update']);
+    Route::put('/pedido/editar/{id}', [PedidosController::class, 'update']);
+    Route::put('/pedido/{id}/final-value', [PedidosController::class, 'changeFinalValue']);
+
 });
 
 

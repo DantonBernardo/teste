@@ -34,6 +34,7 @@ class Pedido extends Model
         'margem_lucro_percentual',
         'valor_total_final',
         'status',
+        'valor_final_aprovado',
         'data_entrega',
     ];
 
@@ -56,5 +57,7 @@ class Pedido extends Model
         'valor_bruto_final' => 'float',
         'margem_lucro_percentual' => 'float',
         'valor_total_final' => 'float',
+        'valor_final_aprovado' => 'float',
     ];
+    
 }

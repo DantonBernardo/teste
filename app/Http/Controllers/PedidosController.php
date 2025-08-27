@@ -6,13 +6,12 @@ use App\Models\Maquina;
 use App\Models\Pedido;
 use App\Models\Materiais;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PedidosController extends Controller
 {
     public function index()
     {
-        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final')
+        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
@@ -27,7 +26,7 @@ class PedidosController extends Controller
 
     public function last()
     {
-        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final')
+        $pedidos = Pedido::select('id', 'solicitante', 'created_at', 'status', 'valor_total_final', 'valor_final_aprovado')
             ->orderBy('id', 'desc')
             ->take(10)
             ->get()
@@ -49,13 +48,13 @@ class PedidosController extends Controller
 
     public function buscar(Request $request)
     {
-        $termo = $request->query('q');
+        $termo = strtolower($request->query('q'));
 
         $pedidos = Pedido::select('id', 'peca', 'descricao', 'solicitante')
-            ->where('peca', 'like', "%$termo%")
-            ->orWhere('descricao', 'like', "%$termo%")
-            ->orWhere('solicitante', 'like', "%$termo%")
-            ->orWhere('id', 'like', "%$termo%")
+            ->whereRaw('LOWER(peca) LIKE ?', ["%{$termo}%"])
+            ->orWhereRaw('LOWER(descricao) LIKE ?', ["%{$termo}%"])
+            ->orWhereRaw('LOWER(solicitante) LIKE ?', ["%{$termo}%"])
+            ->orWhereRaw('CAST(id AS CHAR) LIKE ?', ["%{$termo}%"])
             ->orderBy('id', 'asc')
             ->limit(10)
             ->get();
@@ -124,7 +123,7 @@ class PedidosController extends Controller
 
     public function faturamento()
     {
-        $faturamento = Pedido::whereIn('status', ['Concluído', 'Em Produção'])->sum('valor_total_final');
+        $faturamento = Pedido::whereIn('status', ['Concluído', 'Em Produção'])->sum('valor_final_aprovado');
 
         return response()->json([$faturamento]);
     }
@@ -152,6 +151,8 @@ class PedidosController extends Controller
         $valor_itens_extras = $validated['valor_itens_extras'] ?? 0;
         $valor_bruto_final = round($valor_total_fabricacao + $valor_itens_extras, 2);
         $valor_total_final = round($valor_bruto_final + ($valor_bruto_final * ($validated['margem_lucro_percentual'] / 100)), 2);
+
+        
 
         return [
             ...$validated,
@@ -199,6 +200,7 @@ class PedidosController extends Controller
         ]);
 
         $data = $this->montarDadosPedido($validated);
+        $data['valor_final_aprovado'] = $data['valor_total_final'];
 
         Pedido::create($data);
 
@@ -249,9 +251,24 @@ class PedidosController extends Controller
         ]);
 
         $data = $this->montarDadosPedido($validated);
+        $data['valor_final_aprovado'] = $data['valor_total_final'];
         $pedido->update($data);
 
         return response()->json(['message' => 'Pedido atualizado com sucesso!']);
+    }
+
+    public function changeFinalValue(Request $request, string $id)
+    {
+        $pedido = Pedido::findOrFail($id);
+
+        $validated = $request->validate([
+            'valor_final_aprovado' => 'required|numeric|min:0',
+        ]);
+
+        $pedido->valor_final_aprovado = $validated['valor_final_aprovado'];
+        $pedido->save();
+
+        return response()->json(['message' => 'Valor final atualizado com sucesso!']);
     }
 
     public function destroy(string $id)
