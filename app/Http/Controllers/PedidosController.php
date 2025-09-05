@@ -15,7 +15,6 @@ class PedidosController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        // Agora adiciona o campo formatado em cada item da paginação
         $pedidos->getCollection()->transform(function ($pedido) {
             $pedido->created_at_formatado = $pedido->created_at->format('d/m/Y');
             return $pedido;
@@ -49,6 +48,12 @@ class PedidosController extends Controller
     public function buscar(Request $request)
     {
         $termo = strtolower($request->query('q'));
+
+        if (strlen($termo) > 100) {
+            return response()->json([
+                'message' => 'O termo de busca é muito longo (máx. 50 caracteres).'
+            ], 400);
+        }
 
         $pedidos = Pedido::select('id', 'peca', 'descricao', 'solicitante')
             ->whereRaw('LOWER(peca) LIKE ?', ["%{$termo}%"])
@@ -97,7 +102,7 @@ class PedidosController extends Controller
         });
 
         return response()->json([
-            'total_em_producao' => $totalEmProducao,
+            'total_producao' => $totalEmProducao,
             'pedidos' => $emProducao,
         ]);
     }
